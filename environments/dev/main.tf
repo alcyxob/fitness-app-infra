@@ -87,7 +87,7 @@ resource "aws_iam_role" "app_runner_instance_role" {
         Action = "sts:AssumeRole"
         Effect = "Allow"
         Principal = {
-          Service = "tasks.apprunner.amazonaws.com"
+          Service = "build.apprunner.amazonaws.com"
         }
       }
     ]
@@ -112,21 +112,11 @@ resource "aws_iam_policy" "app_runner_ecr_access_policy" {
           "ecr:GetAuthorizationToken",
           "ecr:BatchCheckLayerAvailability",
           "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage"
+          "ecr:BatchGetImage",
+          "ecr:DescribeImages"
         ]
         Resource = "*" // Allow access to all ECR repositories, or restrict to specific ones
-      },
-      # If App Runner creates CW Logs for you, it might need this (often handled by service-linked role)
-      # {
-      #   Effect = "Allow",
-      #   Action = [
-      #       "logs:CreateLogStream",
-      #       "logs:PutLogEvents",
-      #       "logs:DescribeLogStreams",
-      #       "logs:CreateLogGroup"
-      #   ],
-      #   Resource = "arn:aws:logs:*:*:log-group:/aws/apprunner/*"
-      # }
+      }
     ]
   })
 }
