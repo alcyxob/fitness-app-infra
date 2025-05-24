@@ -108,9 +108,3 @@ variable "custom_domain_name" {
   type        = string
   default     = "" # Leave empty if not using a custom domain initially
 }
-
-variable "route53_zone_id" {
-  description = "The Route 53 Hosted Zone ID for your domain (if using custom_domain_name)."
-  type        = string
-  default     = "" # Leave empty if not using
-}
