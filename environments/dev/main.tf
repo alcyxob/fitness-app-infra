@@ -195,23 +195,19 @@ resource "aws_apprunner_auto_scaling_configuration_version" "default" {
   }
 }
 
-// --- Route 53 Record for App Runner Service ---
-data "aws_route53_zone" "selected" {
-  count = var.custom_domain_name != "" ? 1 : 0 # Only fetch if zone name is provided
-  name  = var.custom_domain_name
-  # private_zone = false # Set to true if it's a private hosted zone
+// --- App Runner Custom Domain Association ---
+resource "aws_apprunner_custom_domain_association" "app_runner_domain" {
+  count = var.custom_domain_name != "" ? 1 : 0
+
+  domain_name          = "${var.environment}-api.${var.custom_domain_name}" # e.g., dev-api.example.com
+  service_arn          = aws_apprunner_service.main_app_service.arn
+  enable_www_subdomain = false # Set to true if you want www.dev-api.example.com as well
+
+  # You will need to manually create CNAME records in your Route 53 (or other DNS provider)
+  # based on the output of this resource (certificate_validation_records).
+  # Terraform can output these values for you.
 }
 
-resource "aws_route53_record" "app_runner_subdomain" {
-  count   = var.custom_domain_name != "" && length(data.aws_route53_zone.selected) > 0 ? 1 : 0 # Create only if zone name is provided and zone is found
-  zone_id = data.aws_route53_zone.selected[0].zone_id
-  name    = "${var.environment}-api" // e.g., "dev-api". Route 53 automatically appends the zone name.
-  type    = "CNAME"
-  ttl     = 300
-  records = [aws_apprunner_service.main_app_service.service_url]
-
-  # Explicit dependency, though usually inferred from service_url usage
-  depends_on = [aws_apprunner_service.main_app_service]
-}
-
-// TODO: Custom Domain, ACM Certificate, Route 53 records if var.custom_domain_name is set
+// TODO: Custom Domain, ACM Certificate, Route 53 records if var.custom_domain_name is set 
+// The above aws_apprunner_custom_domain_association handles the custom domain part.
+// You will still need to manually add the CNAME records provided by App Runner to your DNS zone.
