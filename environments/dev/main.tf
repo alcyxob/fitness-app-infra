@@ -138,17 +138,18 @@ resource "aws_apprunner_service" "main_app_service" {
         port = var.app_runner_port # The port your app listens on (e.g., 8080)
 
         runtime_environment_variables = {
-          GIN_MODE           = "release"                 # Or "debug" for dev
-          SERVER_ADDRESS     = ":${var.app_runner_port}" # App Runner sets PORT, but GIN_MODE listens on SERVER_ADDRESS
-          DATABASE_URI       = var.database_uri
-          DATABASE_NAME      = var.database_name
-          JWT_SECRET         = var.jwt_secret
-          JWT_EXPIRATION     = var.jwt_expiration // Should be like "60m"
-          S3_BUCKET_NAME     = aws_s3_bucket.video_uploads_bucket.bucket
-          S3_REGION          = var.s3_region                                                                                       // Region of your S3 bucket
-          S3_ENDPOINT        = "https://s3.${var.s3_region}.amazonaws.com"                                                         // Standard S3 endpoint for this region
-          S3_PUBLIC_ENDPOINT = var.s3_public_endpoint != "" ? var.s3_public_endpoint : "https://s3.${var.s3_region}.amazonaws.com" // Use public endpoint if set, else default
-          S3_USE_SSL         = var.s3_use_ssl
+          GIN_MODE            = "release"                 # Or "debug" for dev
+          SERVER_ADDRESS      = ":${var.app_runner_port}" # App Runner sets PORT, but GIN_MODE listens on SERVER_ADDRESS
+          DATABASE_URI        = var.database_uri
+          DATABASE_NAME       = var.database_name
+          JWT_SECRET          = var.jwt_secret
+          JWT_EXPIRATION      = var.jwt_expiration // Should be like "60m"
+          S3_BUCKET_NAME      = aws_s3_bucket.video_uploads_bucket.bucket
+          S3_REGION           = var.s3_region                                                                                       // Region of your S3 bucket
+          S3_ENDPOINT         = "https://s3.${var.s3_region}.amazonaws.com"                                                         // Standard S3 endpoint for this region
+          S3_PUBLIC_ENDPOINT  = var.s3_public_endpoint != "" ? var.s3_public_endpoint : "https://s3.${var.s3_region}.amazonaws.com" // Use public endpoint if set, else default
+          S3_USE_SSL          = var.s3_use_ssl
+          APPLE_APP_BUNDLE_ID = var.apple_app_bundle_id
           # Add any other environment variables your Go application needs
         }
       }

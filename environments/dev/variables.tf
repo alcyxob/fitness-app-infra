@@ -108,3 +108,9 @@ variable "custom_domain_name" {
   type        = string
   default     = "" # Leave empty if not using a custom domain initially
 }
+
+variable "apple_app_bundle_id" {
+  description = "The Apple App Bundle ID."
+  type        = string
+  default     = "com.jutechnik.FitnessClient"
+}
