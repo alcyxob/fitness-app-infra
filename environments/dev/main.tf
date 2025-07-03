@@ -21,45 +21,47 @@ resource "aws_ecr_repository" "app_ecr_repo" {
     scan_on_push = true
   }
 
-  # Lifecycle policy to manage image retention
-  lifecycle_policy {
-    policy = jsonencode({
-      rules = [
-        {
-          rulePriority = 1
-          description  = "Keep last 10 images"
-          selection = {
-            tagStatus     = "tagged"
-            tagPrefixList = ["v"]
-            countType     = "imageCountMoreThan"
-            countNumber   = 10
-          }
-          action = {
-            type = "expire"
-          }
-        },
-        {
-          rulePriority = 2
-          description  = "Delete untagged images older than 1 day"
-          selection = {
-            tagStatus   = "untagged"
-            countType   = "sinceImagePushed"
-            countUnit   = "days"
-            countNumber = 1
-          }
-          action = {
-            type = "expire"
-          }
-        }
-      ]
-    })
-  }
-
   tags = {
     Name        = local.ecr_repo_name
     Environment = var.environment
     Project     = var.app_name
   }
+}
+
+# ECR Lifecycle Policy to manage image retention
+resource "aws_ecr_lifecycle_policy" "app_ecr_lifecycle" {
+  repository = aws_ecr_repository.app_ecr_repo.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 10 tagged images"
+        selection = {
+          tagStatus     = "tagged"
+          tagPrefixList = ["v"]
+          countType     = "imageCountMoreThan"
+          countNumber   = 10
+        }
+        action = {
+          type = "expire"
+        }
+      },
+      {
+        rulePriority = 2
+        description  = "Delete untagged images older than 1 day"
+        selection = {
+          tagStatus   = "untagged"
+          countType   = "sinceImagePushed"
+          countUnit   = "days"
+          countNumber = 1
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
 }
 
 // --- S3 Bucket for Video Uploads ---
