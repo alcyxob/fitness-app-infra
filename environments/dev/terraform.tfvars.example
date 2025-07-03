@@ -1,0 +1,50 @@
+# Fitness App Terraform Variables Example
+# Copy this file to terraform.tfvars and fill in your actual values
+
+# --- Basic Configuration ---
+aws_region  = "eu-west-1"
+app_name    = "fitness-app"
+environment = "dev"
+
+# --- Container Configuration ---
+ecr_image_tag = "latest"
+
+# --- App Runner Configuration ---
+app_runner_cpu    = "1 vCPU"
+app_runner_memory = "2 GB"
+app_runner_port   = 8080
+
+# --- Auto Scaling ---
+min_instances    = 1
+max_instances    = 5
+max_concurrency  = 100
+
+# --- Application Configuration ---
+database_name    = "fitness_app_dev"
+jwt_expiration   = "60m"
+log_level        = "INFO"
+log_retention_days = 14
+
+# --- S3 Configuration ---
+s3_bucket_name_suffix = "videos"
+s3_region            = "eu-west-1"
+s3_use_ssl           = "true"
+s3_public_endpoint   = "" # Leave empty for AWS S3
+
+# --- CORS Configuration ---
+cors_allowed_origins = [
+  "https://your-frontend-domain.com",
+  "http://localhost:3000", # For local development
+  # Add your iOS app's custom URL scheme if needed
+]
+
+# --- Apple Configuration ---
+apple_app_bundle_id = "com.jutechnik.FitnessClient"
+
+# --- Custom Domain (Optional) ---
+custom_domain_name = "" # e.g., "yourdomain.com" -> creates "dev-api.yourdomain.com"
+
+# --- Sensitive Variables (Set via Terraform Cloud/CLI) ---
+# These should be set as environment variables or via Terraform Cloud
+# TF_VAR_database_uri="mongodb+srv://username:password@cluster.mongodb.net/fitness_app_dev"
+# TF_VAR_jwt_secret="your-super-secure-jwt-secret-minimum-32-characters-long"
