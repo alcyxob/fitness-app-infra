@@ -1,0 +1,76 @@
+name: Terraform CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.0"
+      - run: terraform fmt -check -recursive
+
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [dev]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.0"
+      - name: Terraform Init
+        run: terraform init -backend=false
+        working-directory: environments/${{ matrix.environment }}
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: environments/${{ matrix.environment }}
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+      - run: tflint --init
+      - run: tflint --recursive --minimum-failure-severity=warning
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy (tfsec) scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          trivyignores: .trivyignore
+
+  plan:
+    if: github.event_name == 'pull_request'
+    needs: [format, validate, lint, security]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [dev]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.0"
+      - name: Terraform Init
+        run: terraform init -backend=false
+        working-directory: environments/${{ matrix.environment }}
+      - name: Terraform Plan (CI dry-run)
+        run: terraform plan -var-file=terraform.tfvars.ci -input=false
+        working-directory: environments/${{ matrix.environment }}
