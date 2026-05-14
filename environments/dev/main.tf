@@ -10,7 +10,6 @@ locals {
 }
 
 data "aws_caller_identity" "current" {}
-data "aws_region" "current" {}
 
 // --- ECR Repository to store Docker images ---
 resource "aws_ecr_repository" "app_ecr_repo" {
