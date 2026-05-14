@@ -20,3 +20,7 @@ AVD-AWS-0017
 # ECR: image tags are mutable
 # Backlog: set to IMMUTABLE for production, acceptable for dev with 'latest' tag
 AVD-AWS-0031
+
+# SNS: topic encryption uses AWS-managed key instead of CMK
+# Acceptable for dev environment; CMK adds cost with minimal security benefit for alerts
+AVD-AWS-0136
