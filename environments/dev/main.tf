@@ -1,5 +1,12 @@
 provider "aws" {
   region = var.aws_region
+  default_tags {
+    tags = {
+      Environment = var.environment
+      Project     = var.app_name
+      ManagedBy   = "terraform"
+    }
+  }
 }
 
 locals {
@@ -136,6 +143,31 @@ resource "aws_s3_bucket_public_access_block" "video_uploads_bucket_public_access
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+// Enforce HTTPS-only access to the bucket
+resource "aws_s3_bucket_policy" "video_uploads_ssl_only" {
+  bucket = aws_s3_bucket.video_uploads_bucket.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "DenyNonSSLRequests"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
+        Resource = [
+          aws_s3_bucket.video_uploads_bucket.arn,
+          "${aws_s3_bucket.video_uploads_bucket.arn}/*"
+        ]
+        Condition = {
+          Bool = {
+            "aws:SecureTransport" = "false"
+          }
+        }
+      }
+    ]
+  })
 }
 
 // CORS configuration to allow uploads from your web/mobile client's origin

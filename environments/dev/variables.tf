@@ -173,3 +173,9 @@ variable "alert_email" {
   type        = string
   default     = ""
 }
+
+variable "monthly_budget_limit" {
+  description = "Monthly AWS budget limit in USD."
+  type        = string
+  default     = "50"
+}
