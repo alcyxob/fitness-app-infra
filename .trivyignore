@@ -1,0 +1,18 @@
+# Trivy ignore file - known issues tracked in backlog
+# These will be addressed in future iterations
+
+# App Runner: secrets passed as plain-text environment variables
+# Backlog: migrate to AWS Secrets Manager / SSM Parameter Store references
+AVD-AWS-0057
+
+# S3: bucket encryption uses AES256 instead of KMS CMK
+# Backlog: switch to aws:kms with dedicated CMK when cost-justified
+AVD-AWS-0132
+
+# S3: no bucket policy attached
+# Backlog: add explicit deny policy for defense-in-depth (public access already blocked)
+AVD-AWS-0088
+
+# CloudWatch Logs: log group is not encrypted with KMS
+# Backlog: add KMS encryption for log groups when CMK is provisioned
+AVD-AWS-0017

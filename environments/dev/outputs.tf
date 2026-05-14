@@ -53,12 +53,12 @@ output "custom_domain_validation_records" {
 output "deployment_info" {
   description = "Summary of deployment information."
   value = {
-    environment     = var.environment
-    region          = var.aws_region
-    app_name        = var.app_name
-    service_url     = aws_apprunner_service.main_app_service.service_url
-    s3_bucket       = aws_s3_bucket.video_uploads_bucket.bucket
-    ecr_repository  = aws_ecr_repository.app_ecr_repo.repository_url
-    log_group       = aws_cloudwatch_log_group.app_runner_logs.name
+    environment    = var.environment
+    region         = var.aws_region
+    app_name       = var.app_name
+    service_url    = aws_apprunner_service.main_app_service.service_url
+    s3_bucket      = aws_s3_bucket.video_uploads_bucket.bucket
+    ecr_repository = aws_ecr_repository.app_ecr_repo.repository_url
+    log_group      = aws_cloudwatch_log_group.app_runner_logs.name
   }
 }
