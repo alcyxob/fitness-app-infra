@@ -34,15 +34,19 @@ resource "aws_iam_policy" "app_runner_ecr_access_policy" {
     Version = "2012-10-17"
     Statement = [
       {
+        Effect   = "Allow"
+        Action   = "ecr:GetAuthorizationToken"
+        Resource = "*"
+      },
+      {
         Effect = "Allow"
         Action = [
-          "ecr:GetAuthorizationToken",
           "ecr:BatchCheckLayerAvailability",
           "ecr:GetDownloadUrlForLayer",
           "ecr:BatchGetImage",
           "ecr:DescribeImages"
         ]
-        Resource = "*"
+        Resource = aws_ecr_repository.app_ecr_repo.arn
       }
     ]
   })

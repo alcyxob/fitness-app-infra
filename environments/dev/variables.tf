@@ -147,7 +147,12 @@ variable "s3_use_ssl" {
 variable "cors_allowed_origins" {
   description = "List of allowed origins for CORS configuration."
   type        = list(string)
-  default     = ["*"] # Restrict this in production
+  default     = ["https://dev-api.fitnessapp.jutechnik.com"]
+
+  validation {
+    condition     = var.environment == "dev" || !contains(var.cors_allowed_origins, "*")
+    error_message = "Wildcard '*' origin is not allowed in non-dev environments."
+  }
 }
 
 # --- Custom Domain (Optional) ---
@@ -161,4 +166,10 @@ variable "apple_app_bundle_id" {
   description = "The Apple App Bundle ID."
   type        = string
   default     = "com.jutechnik.FitnessClient"
+}
+
+variable "alert_email" {
+  description = "Email address for CloudWatch alarm notifications."
+  type        = string
+  default     = ""
 }
