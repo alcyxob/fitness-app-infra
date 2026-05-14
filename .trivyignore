@@ -16,3 +16,7 @@ AVD-AWS-0088
 # CloudWatch Logs: log group is not encrypted with KMS
 # Backlog: add KMS encryption for log groups when CMK is provisioned
 AVD-AWS-0017
+
+# ECR: image tags are mutable
+# Backlog: set to IMMUTABLE for production, acceptable for dev with 'latest' tag
+AVD-AWS-0031
