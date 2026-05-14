@@ -151,6 +151,40 @@ resource "aws_s3_bucket_cors_configuration" "video_uploads_bucket_cors" {
   }
 }
 
+// --- SSM Parameter Store for Secrets ---
+// These store secrets encrypted. Next step: update the Go app to read from SSM
+// directly using the AWS SDK, then remove DATABASE_URI and JWT_SECRET from
+// runtime_environment_variables below.
+resource "aws_ssm_parameter" "database_uri" {
+  name  = "/${var.app_name}/${var.environment}/database-uri"
+  type  = "SecureString"
+  value = var.database_uri
+
+  tags = {
+    Environment = var.environment
+    Project     = var.app_name
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "jwt_secret" {
+  name  = "/${var.app_name}/${var.environment}/jwt-secret"
+  type  = "SecureString"
+  value = var.jwt_secret
+
+  tags = {
+    Environment = var.environment
+    Project     = var.app_name
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 // --- AWS App Runner Service ---
 resource "aws_apprunner_service" "main_app_service" {
   service_name = "${var.app_name}-service-${var.environment}"
@@ -162,6 +196,10 @@ resource "aws_apprunner_service" "main_app_service" {
       image_configuration {
         port = var.app_runner_port
 
+        # TODO: Migrate DATABASE_URI and JWT_SECRET to be read from SSM at app
+        # startup (see aws_ssm_parameter resources above), then remove them here.
+        # The values are stored encrypted in SSM as the source of truth.
+        # NEVER commit terraform.tfvars containing these secrets.
         runtime_environment_variables = {
           GIN_MODE            = "release"
           LOG_LEVEL           = var.log_level
