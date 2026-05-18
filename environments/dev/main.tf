@@ -9,6 +9,18 @@ provider "aws" {
   }
 }
 
+provider "aws" {
+  alias  = "replica"
+  region = var.s3_replica_region
+  default_tags {
+    tags = {
+      Environment = var.environment
+      Project     = var.app_name
+      ManagedBy   = "terraform"
+    }
+  }
+}
+
 locals {
   # Construct names using variables for consistency
   ecr_repo_name         = "${var.app_name}-backend-${var.environment}"
@@ -310,4 +322,98 @@ resource "aws_cloudwatch_log_group" "app_runner_logs" {
     Environment = var.environment
     Project     = var.app_name
   }
+}
+
+# --- S3 Cross-Region Replication (disabled by default for dev) ---
+# Enable via enable_s3_replication = true for production environments.
+
+resource "aws_s3_bucket" "video_uploads_replica" {
+  count    = var.enable_s3_replication ? 1 : 0
+  provider = aws.replica
+  bucket   = "${local.s3_bucket_actual_name}-replica"
+
+  tags = {
+    Name        = "${local.s3_bucket_actual_name}-replica"
+    Environment = var.environment
+    Project     = var.app_name
+  }
+}
+
+resource "aws_s3_bucket_versioning" "video_uploads_replica_versioning" {
+  count    = var.enable_s3_replication ? 1 : 0
+  provider = aws.replica
+  bucket   = aws_s3_bucket.video_uploads_replica[0].id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_iam_role" "s3_replication_role" {
+  count = var.enable_s3_replication ? 1 : 0
+  name  = "${var.app_name}-s3-replication-${var.environment}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "s3.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "s3_replication_policy" {
+  count = var.enable_s3_replication ? 1 : 0
+  name  = "${var.app_name}-s3-replication-policy-${var.environment}"
+  role  = aws_iam_role.s3_replication_role[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetReplicationConfiguration",
+          "s3:ListBucket"
+        ]
+        Resource = [aws_s3_bucket.video_uploads_bucket.arn]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObjectVersionForReplication",
+          "s3:GetObjectVersionAcl",
+          "s3:GetObjectVersionTagging"
+        ]
+        Resource = ["${aws_s3_bucket.video_uploads_bucket.arn}/*"]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:ReplicateObject",
+          "s3:ReplicateDelete",
+          "s3:ReplicateTags"
+        ]
+        Resource = ["${aws_s3_bucket.video_uploads_replica[0].arn}/*"]
+      }
+    ]
+  })
+}
+
+resource "aws_s3_bucket_replication_configuration" "video_uploads_replication" {
+  count  = var.enable_s3_replication ? 1 : 0
+  bucket = aws_s3_bucket.video_uploads_bucket.id
+  role   = aws_iam_role.s3_replication_role[0].arn
+
+  rule {
+    id     = "replicate-all"
+    status = "Enabled"
+
+    destination {
+      bucket        = aws_s3_bucket.video_uploads_replica[0].arn
+      storage_class = "STANDARD_IA"
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.video_uploads_bucket_versioning]
 }
