@@ -16,3 +16,6 @@ AVD-AWS-0031
 # SNS: topic encryption uses AWS-managed key instead of CMK
 # Acceptable for dev environment; CMK adds cost with minimal security benefit for alerts
 AVD-AWS-0136
+
+# S3: Trivy flags bucket_key_enabled pattern even with KMS CMK configured
+AVD-AWS-0132
