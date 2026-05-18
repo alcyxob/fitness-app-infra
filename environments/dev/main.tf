@@ -108,13 +108,21 @@ resource "aws_s3_bucket_versioning" "video_uploads_bucket_versioning" {
   }
 }
 
+# KMS key for S3 video uploads encryption
+resource "aws_kms_key" "s3_encryption" {
+  description         = "KMS key for S3 video uploads encryption"
+  enable_key_rotation = true
+  tags                = { Name = "${var.app_name}-s3-key-${var.environment}" }
+}
+
 # Server-side encryption
 resource "aws_s3_bucket_server_side_encryption_configuration" "video_uploads_bucket_encryption" {
   bucket = aws_s3_bucket.video_uploads_bucket.id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.s3_encryption.arn
     }
     bucket_key_enabled = true
   }
@@ -312,10 +320,43 @@ resource "aws_apprunner_custom_domain_association" "app_runner_domain" {
   enable_www_subdomain = false
 }
 
+# KMS key for CloudWatch Logs encryption
+resource "aws_kms_key" "cloudwatch_logs" {
+  description         = "KMS key for CloudWatch Logs encryption"
+  enable_key_rotation = true
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableRootAccount"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowCloudWatchLogs"
+        Effect    = "Allow"
+        Principal = { Service = "logs.${var.aws_region}.amazonaws.com" }
+        Action    = ["kms:Encrypt*", "kms:Decrypt*", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:Describe*"]
+        Resource  = "*"
+        Condition = { ArnLike = { "kms:EncryptionContext:aws:logs:arn" = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:*" } }
+      }
+    ]
+  })
+  tags = { Name = "${var.app_name}-cloudwatch-logs-key-${var.environment}" }
+}
+
+resource "aws_kms_alias" "cloudwatch_logs" {
+  name          = "alias/${var.app_name}-cloudwatch-logs-${var.environment}"
+  target_key_id = aws_kms_key.cloudwatch_logs.key_id
+}
+
 # CloudWatch Log Group for App Runner
 resource "aws_cloudwatch_log_group" "app_runner_logs" {
   name              = "/aws/apprunner/${var.app_name}-service-${var.environment}"
   retention_in_days = var.log_retention_days
+  kms_key_id        = aws_kms_key.cloudwatch_logs.arn
 
   tags = {
     Name        = "${var.app_name}-logs-${var.environment}"
