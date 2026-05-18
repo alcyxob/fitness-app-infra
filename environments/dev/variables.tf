@@ -70,17 +70,6 @@ variable "jwt_expiration" {
   default     = "60m"
 }
 
-variable "log_level" {
-  description = "Application log level."
-  type        = string
-  default     = "INFO"
-  validation {
-    condition = contains([
-      "DEBUG", "INFO", "WARN", "ERROR"
-    ], var.log_level)
-    error_message = "Log level must be one of: DEBUG, INFO, WARN, ERROR."
-  }
-}
 
 variable "log_retention_days" {
   description = "CloudWatch log retention in days."
@@ -113,11 +102,6 @@ variable "cors_allowed_origins" {
 }
 
 # --- Custom Domain (Optional) ---
-variable "custom_domain_name" {
-  description = "Your custom domain name (e.g., example.com)."
-  type        = string
-  default     = ""
-}
 
 variable "apple_app_bundle_id" {
   description = "The Apple App Bundle ID."
