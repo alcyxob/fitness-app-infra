@@ -207,118 +207,8 @@ resource "aws_s3_bucket_cors_configuration" "video_uploads_bucket_cors" {
 // These store secrets encrypted. Next step: update the Go app to read from SSM
 // directly using the AWS SDK, then remove DATABASE_URI and JWT_SECRET from
 // runtime_environment_variables below.
-resource "aws_ssm_parameter" "database_uri" {
-  name  = "/${var.app_name}/${var.environment}/database-uri"
-  type  = "SecureString"
-  value = var.database_uri
-
-  tags = {
-    Environment = var.environment
-    Project     = var.app_name
-  }
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "aws_ssm_parameter" "jwt_secret" {
-  name  = "/${var.app_name}/${var.environment}/jwt-secret"
-  type  = "SecureString"
-  value = var.jwt_secret
-
-  tags = {
-    Environment = var.environment
-    Project     = var.app_name
-  }
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-// --- AWS App Runner Service ---
-resource "aws_apprunner_service" "main_app_service" {
-  service_name = "${var.app_name}-service-${var.environment}"
-
-  source_configuration {
-    image_repository {
-      image_identifier      = "${aws_ecr_repository.app_ecr_repo.repository_url}:${var.ecr_image_tag}"
-      image_repository_type = "ECR"
-      image_configuration {
-        port = var.app_runner_port
-
-        # TODO: Migrate DATABASE_URI and JWT_SECRET to be read from SSM at app
-        # startup (see aws_ssm_parameter resources above), then remove them here.
-        # The values are stored encrypted in SSM as the source of truth.
-        # NEVER commit terraform.tfvars containing these secrets.
-        runtime_environment_variables = {
-          GIN_MODE            = "release"
-          LOG_LEVEL           = var.log_level
-          SERVER_ADDRESS      = ":${var.app_runner_port}"
-          DATABASE_URI        = var.database_uri
-          DATABASE_NAME       = var.database_name
-          JWT_SECRET          = var.jwt_secret
-          JWT_EXPIRATION      = var.jwt_expiration
-          S3_BUCKET_NAME      = aws_s3_bucket.video_uploads_bucket.bucket
-          S3_REGION           = var.s3_region
-          S3_ENDPOINT         = "https://s3.${var.s3_region}.amazonaws.com"
-          S3_PUBLIC_ENDPOINT  = var.s3_public_endpoint != "" ? var.s3_public_endpoint : "https://s3.${var.s3_region}.amazonaws.com"
-          S3_USE_SSL          = var.s3_use_ssl
-          APPLE_APP_BUNDLE_ID = var.apple_app_bundle_id
-        }
-      }
-    }
-    authentication_configuration {
-      access_role_arn = aws_iam_role.app_runner_access_role.arn
-    }
-  }
-
-  auto_scaling_configuration_arn = aws_apprunner_auto_scaling_configuration_version.default.arn
-
-  instance_configuration {
-    cpu               = var.app_runner_cpu
-    memory            = var.app_runner_memory
-    instance_role_arn = aws_iam_role.app_runner_instance_role.arn # This enables S3 access
-  }
-
-  health_check_configuration {
-    protocol            = "HTTP"
-    path                = "/health"
-    interval            = 10
-    timeout             = 5
-    healthy_threshold   = 1
-    unhealthy_threshold = 2
-  }
-
-  tags = {
-    Name        = "${var.app_name}-service-${var.environment}"
-    Environment = var.environment
-    Project     = var.app_name
-  }
-}
-
-// --- App Runner Auto Scaling Configuration ---
-resource "aws_apprunner_auto_scaling_configuration_version" "default" {
-  auto_scaling_configuration_name = "${var.app_name}-autoscaling-${var.environment}"
-  max_concurrency                 = var.max_concurrency
-  min_size                        = var.min_instances
-  max_size                        = var.max_instances
-
-  tags = {
-    Name        = "${var.app_name}-autoscaling-${var.environment}"
-    Environment = var.environment
-  }
-}
-
-// --- App Runner Custom Domain Association ---
-resource "aws_apprunner_custom_domain_association" "app_runner_domain" {
-  count = var.custom_domain_name != "" ? 1 : 0
-
-  domain_name          = "${var.environment}-api.${var.custom_domain_name}"
-  service_arn          = aws_apprunner_service.main_app_service.arn
-  enable_www_subdomain = false
-}
+# SSM Parameters are managed outside Terraform (created via CLI)
+# Read via data sources in lambda.tf
 
 # KMS key for CloudWatch Logs encryption
 resource "aws_kms_key" "cloudwatch_logs" {
@@ -352,9 +242,9 @@ resource "aws_kms_alias" "cloudwatch_logs" {
   target_key_id = aws_kms_key.cloudwatch_logs.key_id
 }
 
-# CloudWatch Log Group for App Runner
-resource "aws_cloudwatch_log_group" "app_runner_logs" {
-  name              = "/aws/apprunner/${var.app_name}-service-${var.environment}"
+# CloudWatch Log Group for Lambda
+resource "aws_cloudwatch_log_group" "lambda_logs" {
+  name              = "/aws/lambda/${var.app_name}-api-${var.environment}"
   retention_in_days = var.log_retention_days
   kms_key_id        = aws_kms_key.cloudwatch_logs.arn
 

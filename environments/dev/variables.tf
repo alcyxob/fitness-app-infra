@@ -28,77 +28,24 @@ variable "s3_bucket_name_suffix" {
   default     = "videos"
 }
 
-# --- App Runner Configuration ---
-variable "app_runner_cpu" {
-  description = "CPU for App Runner instance."
-  type        = string
-  default     = "1 vCPU"
-  validation {
-    condition = contains([
-      "0.25 vCPU", "0.5 vCPU", "1 vCPU", "2 vCPU", "4 vCPU"
-    ], var.app_runner_cpu)
-    error_message = "CPU must be one of: 0.25 vCPU, 0.5 vCPU, 1 vCPU, 2 vCPU, 4 vCPU."
-  }
-}
-
-variable "app_runner_memory" {
-  description = "Memory for App Runner instance."
-  type        = string
-  default     = "2 GB"
-  validation {
-    condition = contains([
-      "0.5 GB", "1 GB", "2 GB", "3 GB", "4 GB", "6 GB", "8 GB", "10 GB", "12 GB"
-    ], var.app_runner_memory)
-    error_message = "Memory must be one of: 0.5 GB, 1 GB, 2 GB, 3 GB, 4 GB, 6 GB, 8 GB, 10 GB, 12 GB."
-  }
-}
-
-variable "app_runner_port" {
-  description = "The port your application listens on inside the container."
+# --- Lambda Configuration ---
+variable "lambda_memory_size" {
+  description = "Memory size for the Lambda function in MB."
   type        = number
-  default     = 8080
+  default     = 256
 }
 
-# --- Auto Scaling Configuration ---
-variable "min_instances" {
-  description = "Minimum number of App Runner instances."
+variable "lambda_timeout" {
+  description = "Timeout for the Lambda function in seconds."
   type        = number
-  default     = 1
-}
-
-variable "max_instances" {
-  description = "Maximum number of App Runner instances."
-  type        = number
-  default     = 5
-}
-
-variable "max_concurrency" {
-  description = "Maximum concurrent requests per App Runner instance."
-  type        = number
-  default     = 100
+  default     = 30
 }
 
 # --- Application Environment Variables ---
-variable "database_uri" {
-  description = "MongoDB connection URI (from MongoDB Atlas or other provider)."
-  type        = string
-  sensitive   = true
-}
-
 variable "database_name" {
   description = "Name of the database."
   type        = string
   default     = "fitness_app_dev"
-}
-
-variable "jwt_secret" {
-  description = "Secret key for JWT signing (minimum 32 characters)."
-  type        = string
-  sensitive   = true
-  validation {
-    condition     = length(var.jwt_secret) >= 32
-    error_message = "JWT secret must be at least 32 characters long for security."
-  }
 }
 
 variable "jwt_expiration" {
@@ -107,17 +54,6 @@ variable "jwt_expiration" {
   default     = "60m"
 }
 
-variable "log_level" {
-  description = "Application log level."
-  type        = string
-  default     = "INFO"
-  validation {
-    condition = contains([
-      "DEBUG", "INFO", "WARN", "ERROR"
-    ], var.log_level)
-    error_message = "Log level must be one of: DEBUG, INFO, WARN, ERROR."
-  }
-}
 
 variable "log_retention_days" {
   description = "CloudWatch log retention in days."
@@ -126,12 +62,6 @@ variable "log_retention_days" {
 }
 
 # --- S3 Configuration ---
-variable "s3_public_endpoint" {
-  description = "Publicly accessible S3 endpoint for client-side pre-signed URLs."
-  type        = string
-  default     = ""
-}
-
 variable "s3_region" {
   description = "The AWS region for the S3 bucket (should match aws_region usually)."
   type        = string
@@ -156,11 +86,6 @@ variable "cors_allowed_origins" {
 }
 
 # --- Custom Domain (Optional) ---
-variable "custom_domain_name" {
-  description = "Your custom domain name (e.g., example.com)."
-  type        = string
-  default     = ""
-}
 
 variable "apple_app_bundle_id" {
   description = "The Apple App Bundle ID."
