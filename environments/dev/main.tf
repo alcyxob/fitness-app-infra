@@ -207,35 +207,8 @@ resource "aws_s3_bucket_cors_configuration" "video_uploads_bucket_cors" {
 // These store secrets encrypted. Next step: update the Go app to read from SSM
 // directly using the AWS SDK, then remove DATABASE_URI and JWT_SECRET from
 // runtime_environment_variables below.
-resource "aws_ssm_parameter" "database_uri" {
-  name  = "/${var.app_name}/${var.environment}/database-uri"
-  type  = "SecureString"
-  value = var.database_uri
-
-  tags = {
-    Environment = var.environment
-    Project     = var.app_name
-  }
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "aws_ssm_parameter" "jwt_secret" {
-  name  = "/${var.app_name}/${var.environment}/jwt-secret"
-  type  = "SecureString"
-  value = var.jwt_secret
-
-  tags = {
-    Environment = var.environment
-    Project     = var.app_name
-  }
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
+# SSM Parameters are managed outside Terraform (created via CLI)
+# Read via data sources in lambda.tf
 
 # KMS key for CloudWatch Logs encryption
 resource "aws_kms_key" "cloudwatch_logs" {

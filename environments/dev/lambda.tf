@@ -1,4 +1,12 @@
 # Lambda function
+data "aws_ssm_parameter" "database_uri" {
+  name = "/${var.app_name}/${var.environment}/database-uri"
+}
+
+data "aws_ssm_parameter" "jwt_secret" {
+  name = "/${var.app_name}/${var.environment}/jwt-secret"
+}
+
 resource "aws_lambda_function" "api" {
   function_name = "${var.app_name}-api-${var.environment}"
   package_type  = "Image"
@@ -11,9 +19,9 @@ resource "aws_lambda_function" "api" {
   environment {
     variables = {
       GIN_MODE            = "release"
-      DATABASE_URI        = var.database_uri
+      DATABASE_URI        = data.aws_ssm_parameter.database_uri.value
       DATABASE_NAME       = var.database_name
-      JWT_SECRET          = var.jwt_secret
+      JWT_SECRET          = data.aws_ssm_parameter.jwt_secret.value
       JWT_EXPIRATION      = var.jwt_expiration
       S3_BUCKET_NAME      = aws_s3_bucket.video_uploads_bucket.bucket
       S3_REGION           = var.s3_region

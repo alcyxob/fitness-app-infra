@@ -42,26 +42,10 @@ variable "lambda_timeout" {
 }
 
 # --- Application Environment Variables ---
-variable "database_uri" {
-  description = "MongoDB connection URI (from MongoDB Atlas or other provider)."
-  type        = string
-  sensitive   = true
-}
-
 variable "database_name" {
   description = "Name of the database."
   type        = string
   default     = "fitness_app_dev"
-}
-
-variable "jwt_secret" {
-  description = "Secret key for JWT signing (minimum 32 characters)."
-  type        = string
-  sensitive   = true
-  validation {
-    condition     = length(var.jwt_secret) >= 32
-    error_message = "JWT secret must be at least 32 characters long for security."
-  }
 }
 
 variable "jwt_expiration" {
