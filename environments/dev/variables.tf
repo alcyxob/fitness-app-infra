@@ -179,3 +179,15 @@ variable "monthly_budget_limit" {
   type        = string
   default     = "50"
 }
+
+variable "enable_s3_replication" {
+  description = "Enable S3 cross-region replication. Overkill for dev; enable for production."
+  type        = bool
+  default     = false
+}
+
+variable "s3_replica_region" {
+  description = "Destination region for S3 cross-region replication."
+  type        = string
+  default     = "eu-central-1"
+}
