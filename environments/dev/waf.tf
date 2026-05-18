@@ -1,3 +1,7 @@
+# NOTE: API Gateway v2 HTTP APIs don't support WAF directly.
+# To use WAF, place CloudFront in front of the API Gateway.
+# Keeping the WebACL definition for future CloudFront integration.
+
 resource "aws_wafv2_web_acl" "app_waf" {
   name  = "${var.app_name}-waf-${var.environment}"
   scope = "REGIONAL"
@@ -35,9 +39,4 @@ resource "aws_wafv2_web_acl" "app_waf" {
   }
 
   tags = { Name = "${var.app_name}-waf-${var.environment}" }
-}
-
-resource "aws_wafv2_web_acl_association" "app_waf_association" {
-  resource_arn = aws_apprunner_service.main_app_service.arn
-  web_acl_arn  = aws_wafv2_web_acl.app_waf.arn
 }

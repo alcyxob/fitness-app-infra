@@ -1,25 +1,23 @@
 # Infrastructure CD Pipeline
-# Prerequisites:
-# 1. Set up OIDC identity provider in AWS IAM for GitHub Actions
-#    (https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)
-# 2. Create an IAM role with trust policy for this repo and Terraform permissions
-# 3. Replace the placeholder role ARN below with the actual role ARN
-# 4. Store the role ARN as a GitHub Actions secret: AWS_ROLE_ARN
-
 name: "Terraform CD"
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Docker image tag to deploy"
+        required: false
+        default: "latest"
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  plan:
-    name: Terraform Plan
+  deploy:
+    name: Deploy Lambda
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -29,43 +27,21 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          # TODO: Replace with actual OIDC role ARN once configured
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: us-east-1
+          aws-region: eu-west-1
 
       - uses: hashicorp/setup-terraform@v3
 
-      - run: terraform init
-      - run: terraform plan -out=tfplan
+      - name: Terraform Init & Apply
+        run: |
+          terraform init
+          terraform apply -auto-approve -var="ecr_image_tag=${{ github.event.inputs.image_tag || 'latest' }}"
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: tfplan
-          path: environments/dev/tfplan
-
-  apply:
-    name: Terraform Apply
-    needs: plan
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    environment: production
-    defaults:
-      run:
-        working-directory: environments/dev
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: us-east-1
-
-      - uses: hashicorp/setup-terraform@v3
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: tfplan
-          path: environments/dev
-
-      - run: terraform init
-      - run: terraform apply tfplan
+      - name: Update Lambda function image
+        run: |
+          FUNCTION_NAME=$(terraform output -raw lambda_function_name)
+          ECR_URL=$(terraform output -raw ecr_repository_url)
+          IMAGE_TAG="${{ github.event.inputs.image_tag || 'latest' }}"
+          aws lambda update-function-code \
+            --function-name "$FUNCTION_NAME" \
+            --image-uri "${ECR_URL}:${IMAGE_TAG}"

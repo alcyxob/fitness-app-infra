@@ -15,20 +15,20 @@ resource "aws_sns_topic_subscription" "email_alert" {
   endpoint  = var.alert_email
 }
 
-resource "aws_cloudwatch_metric_alarm" "app_runner_5xx" {
-  alarm_name          = "${var.app_name}-${var.environment}-5xx-errors"
+resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
+  alarm_name          = "${var.app_name}-${var.environment}-lambda-errors"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
-  metric_name         = "5xxStatusResponses"
-  namespace           = "AWS/AppRunner"
+  metric_name         = "Errors"
+  namespace           = "AWS/Lambda"
   period              = 300
   statistic           = "Sum"
   threshold           = 10
-  alarm_description   = "App Runner 5xx errors > 10 in 5 minutes"
+  alarm_description   = "Lambda errors > 10 in 5 minutes"
   alarm_actions       = [aws_sns_topic.app_alerts.arn]
 
   dimensions = {
-    ServiceName = aws_apprunner_service.main_app_service.service_name
+    FunctionName = aws_lambda_function.api.function_name
   }
 
   tags = {
@@ -37,20 +37,20 @@ resource "aws_cloudwatch_metric_alarm" "app_runner_5xx" {
   }
 }
 
-resource "aws_cloudwatch_metric_alarm" "app_runner_latency_p99" {
-  alarm_name          = "${var.app_name}-${var.environment}-latency-p99"
+resource "aws_cloudwatch_metric_alarm" "lambda_duration" {
+  alarm_name          = "${var.app_name}-${var.environment}-lambda-duration"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
-  metric_name         = "RequestLatency"
-  namespace           = "AWS/AppRunner"
+  metric_name         = "Duration"
+  namespace           = "AWS/Lambda"
   period              = 300
   extended_statistic  = "p99"
   threshold           = 5000
-  alarm_description   = "App Runner p99 latency > 5 seconds"
+  alarm_description   = "Lambda p99 duration > 5 seconds"
   alarm_actions       = [aws_sns_topic.app_alerts.arn]
 
   dimensions = {
-    ServiceName = aws_apprunner_service.main_app_service.service_name
+    FunctionName = aws_lambda_function.api.function_name
   }
 
   tags = {
