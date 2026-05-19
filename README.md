@@ -1,15 +1,16 @@
 # Fitness App Infrastructure
 
-This repository contains Terraform configurations for deploying the Fitness App infrastructure on AWS using App Runner, ECR, and S3.
+This repository contains Terraform configurations for deploying the Fitness App infrastructure on AWS using Lambda, API Gateway, ECR, and S3.
 
 ## 🏗️ Architecture Overview
 
 ### Components:
-- **AWS App Runner**: Containerized application hosting with auto-scaling
-- **Amazon ECR**: Docker container registry
+- **AWS Lambda**: Containerized Go API (arm64, 256MB, 30s timeout)
+- **API Gateway HTTP API**: Routes all HTTP requests to Lambda
+- **Amazon ECR**: Docker container registry (IMMUTABLE tags)
 - **Amazon S3**: Video upload storage with lifecycle management
-- **IAM Roles**: Secure access between services
-- **CloudWatch**: Logging and monitoring
+- **IAM Roles**: Lambda execution role with least-privilege access
+- **CloudWatch**: Lambda logging
 
 ### Security Features:
 - ✅ **Instance Profile Authentication**: App Runner uses IAM roles (no hardcoded credentials)
