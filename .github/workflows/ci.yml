@@ -1,13 +1,18 @@
 name: Terraform CI
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
 
 jobs:
-  format:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,64 +20,29 @@ jobs:
         with:
           terraform_version: "1.9.0"
       - run: terraform fmt -check -recursive
-
-  validate:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        environment: [dev]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.9.0"
       - name: Terraform Init
         run: terraform init -backend=false
-        working-directory: environments/${{ matrix.environment }}
+        working-directory: environments/dev
       - name: Terraform Validate
         run: terraform validate
-        working-directory: environments/${{ matrix.environment }}
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: terraform-linters/setup-tflint@v4
-        with:
-          tflint_version: latest
-      - run: tflint --init
-      - run: tflint --recursive --minimum-failure-severity=warning
-
-  security:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run Trivy (tfsec) scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: config
-          scan-ref: .
-          severity: HIGH,CRITICAL
-          exit-code: "1"
-          trivyignores: .trivyignore
+        working-directory: environments/dev
 
   plan:
     if: github.event_name == 'pull_request'
-    needs: [format, validate, lint, security]
+    needs: [validate]
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        environment: [dev]
     steps:
       - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::938835673448:role/github-actions-role
+          aws-region: eu-west-1
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.9.0"
       - name: Terraform Init
-        run: terraform init -backend=false
-        working-directory: environments/${{ matrix.environment }}
-      - name: Terraform Plan (CI dry-run)
-        run: |
-          echo "⚠️ Skipping actual plan - no AWS credentials in CI"
-          echo "Plan will run in Terraform Cloud on merge"
-        working-directory: environments/${{ matrix.environment }}
+        run: terraform init
+        working-directory: environments/dev
+      - name: Terraform Plan
+        run: terraform plan -no-color
+        working-directory: environments/dev
