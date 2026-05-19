@@ -1,23 +1,17 @@
-# Infrastructure CD Pipeline
-name: "Terraform CD"
+name: Terraform CD
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      image_tag:
-        description: "Docker image tag to deploy"
-        required: false
-        default: "latest"
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  deploy:
-    name: Deploy Lambda
+  apply:
+    name: Terraform Apply
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,21 +21,15 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: arn:aws:iam::938835673448:role/github-actions-role
           aws-region: eu-west-1
 
       - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
 
-      - name: Terraform Init & Apply
-        run: |
-          terraform init
-          terraform apply -auto-approve -var="ecr_image_tag=${{ github.event.inputs.image_tag || 'latest' }}"
+      - name: Terraform Init
+        run: terraform init
 
-      - name: Update Lambda function image
-        run: |
-          FUNCTION_NAME=$(terraform output -raw lambda_function_name)
-          ECR_URL=$(terraform output -raw ecr_repository_url)
-          IMAGE_TAG="${{ github.event.inputs.image_tag || 'latest' }}"
-          aws lambda update-function-code \
-            --function-name "$FUNCTION_NAME" \
-            --image-uri "${ECR_URL}:${IMAGE_TAG}"
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
