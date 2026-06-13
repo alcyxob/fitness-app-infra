@@ -1,10 +1,12 @@
 # Lambda function
 data "aws_ssm_parameter" "database_uri" {
-  name = "/${var.app_name}/${var.environment}/database-uri"
+  name       = "/${var.app_name}/${var.environment}/database-uri"
+  depends_on = [aws_ssm_parameter.database_uri]
 }
 
 data "aws_ssm_parameter" "jwt_secret" {
-  name = "/${var.app_name}/${var.environment}/jwt-secret"
+  name       = "/${var.app_name}/${var.environment}/jwt-secret"
+  depends_on = [aws_ssm_parameter.jwt_secret]
 }
 
 resource "aws_lambda_function" "api" {
