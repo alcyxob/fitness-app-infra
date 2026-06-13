@@ -116,3 +116,16 @@ variable "s3_replica_region" {
   type        = string
   default     = "eu-central-1"
 }
+
+# --- Secrets (initial seed values, managed externally after creation) ---
+variable "database_uri" {
+  description = "MongoDB connection URI. Stored in SSM as SecureString."
+  type        = string
+  sensitive   = true
+}
+
+variable "jwt_secret" {
+  description = "JWT signing secret. Stored in SSM as SecureString."
+  type        = string
+  sensitive   = true
+}
