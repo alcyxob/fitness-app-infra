@@ -96,7 +96,7 @@ variable "apple_app_bundle_id" {
 variable "google_web_client_id" {
   description = "Google OAuth Web Client ID for verifying Google Sign-In ID tokens."
   type        = string
-  default     = "572151937259-59h48jtckvgrsvfh1lmgq2ataaao3uqai.apps.googleusercontent.com"
+  default     = "572151937259-59h48jtckvgrsvfh1lmgq2ataao3uqai.apps.googleusercontent.com"
 }
 
 variable "alert_email" {
