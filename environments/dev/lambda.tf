@@ -30,6 +30,7 @@ resource "aws_lambda_function" "api" {
       S3_ENDPOINT         = "https://s3.${var.s3_region}.amazonaws.com"
       S3_USE_SSL          = var.s3_use_ssl
       APPLE_APP_BUNDLE_ID = var.apple_app_bundle_id
+      GOOGLE_WEB_CLIENT_ID = var.google_web_client_id
     }
   }
 
