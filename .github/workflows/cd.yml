@@ -9,6 +9,11 @@ permissions:
   id-token: write
   contents: read
 
+# Never run two applies against the same state at once.
+concurrency:
+  group: terraform-dev
+  cancel-in-progress: false
+
 jobs:
   apply:
     name: Terraform Apply
@@ -27,9 +32,22 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.9.0"
+          # The wrapper adds its own lines to stdout, which breaks the state check below.
+          terraform_wrapper: false
 
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -input=false
+
+      # Guard: the environment already exists in AWS, so empty state means the
+      # remote backend was never populated. Applying would try to recreate
+      # every resource, so stop instead.
+      - name: Check remote state is populated
+        run: |
+          resources="$(terraform state list)"
+          if [ -z "$resources" ]; then
+            echo "::error::Remote state s3://fitness-app-terraform-state/dev/terraform.tfstate is empty. Migrate the existing state first (see README: Remote state)."
+            exit 1
+          fi
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve
+        run: terraform apply -input=false -lock-timeout=5m -auto-approve

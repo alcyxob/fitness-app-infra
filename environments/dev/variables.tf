@@ -124,14 +124,19 @@ variable "s3_replica_region" {
 }
 
 # --- Secrets (initial seed values, managed externally after creation) ---
+# The SSM parameters ignore changes to their value, so these are only used the
+# first time a parameter is created. Afterwards the real value lives in SSM and
+# CI/CD never needs it. Set the real value in SSM after first creation.
 variable "database_uri" {
-  description = "MongoDB connection URI. Stored in SSM as SecureString."
+  description = "Initial MongoDB connection URI seeded into SSM (ignored once the parameter exists)."
   type        = string
   sensitive   = true
+  default     = "SET_IN_SSM"
 }
 
 variable "jwt_secret" {
-  description = "JWT signing secret. Stored in SSM as SecureString."
+  description = "Initial JWT signing secret seeded into SSM (ignored once the parameter exists)."
   type        = string
   sensitive   = true
+  default     = "SET_IN_SSM"
 }

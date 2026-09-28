@@ -41,8 +41,8 @@ jobs:
         with:
           terraform_version: "1.9.0"
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -input=false
         working-directory: environments/dev
       - name: Terraform Plan
-        run: terraform plan -no-color
+        run: terraform plan -input=false -lock-timeout=5m -no-color
         working-directory: environments/dev
