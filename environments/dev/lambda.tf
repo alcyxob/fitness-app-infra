@@ -20,18 +20,24 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      GIN_MODE            = "release"
-      DATABASE_URI        = data.aws_ssm_parameter.database_uri.value
-      DATABASE_NAME       = var.database_name
-      JWT_SECRET          = data.aws_ssm_parameter.jwt_secret.value
-      JWT_EXPIRATION      = var.jwt_expiration
-      S3_BUCKET_NAME      = aws_s3_bucket.video_uploads_bucket.bucket
-      S3_REGION           = var.s3_region
-      S3_ENDPOINT         = "https://s3.${var.s3_region}.amazonaws.com"
-      S3_USE_SSL          = var.s3_use_ssl
-      APPLE_APP_BUNDLE_ID = var.apple_app_bundle_id
+      GIN_MODE             = "release"
+      DATABASE_URI         = data.aws_ssm_parameter.database_uri.value
+      DATABASE_NAME        = var.database_name
+      JWT_SECRET           = data.aws_ssm_parameter.jwt_secret.value
+      JWT_EXPIRATION       = var.jwt_expiration
+      S3_BUCKET_NAME       = aws_s3_bucket.video_uploads_bucket.bucket
+      S3_REGION            = var.s3_region
+      S3_ENDPOINT          = "https://s3.${var.s3_region}.amazonaws.com"
+      S3_USE_SSL           = var.s3_use_ssl
+      APPLE_APP_BUNDLE_ID  = var.apple_app_bundle_id
       GOOGLE_WEB_CLIENT_ID = var.google_web_client_id
     }
+  }
+
+  # The backend repo's deploy workflow pushes :<sha> images and updates the
+  # function code directly, so Terraform must not roll image_uri back.
+  lifecycle {
+    ignore_changes = [image_uri]
   }
 
   depends_on = [aws_cloudwatch_log_group.lambda_logs]

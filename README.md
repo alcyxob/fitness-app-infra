@@ -48,11 +48,14 @@ cd fitness-app-infra/environments/dev
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-### 2. Set Required Variables
+### 2. Set Variables
 
 Edit `terraform.tfvars`:
 ```hcl
-# Required sensitive variables
+# Secret seed values. Only used the first time the SSM parameters are created;
+# after that Terraform ignores them and the real values live in SSM
+# (/fitness-app/<env>/database-uri and /fitness-app/<env>/jwt-secret).
+# If omitted, the parameters are created with the placeholder "SET_IN_SSM".
 database_uri = "mongodb+srv://username:password@cluster.mongodb.net/fitness_app_dev"
 jwt_secret   = "your-super-secure-jwt-secret-minimum-32-characters-long"
 
@@ -74,6 +77,42 @@ terraform apply
 ```bash
 terraform output deployment_info
 ```
+
+## 🗄️ Remote State
+
+State for `environments/dev` is stored in S3 with DynamoDB locking:
+
+- Bucket: `fitness-app-terraform-state`, key `dev/terraform.tfstate`
+- Lock table: `fitness-app-terraform-lock`
+
+Both are created once by `backend-bootstrap/`, which keeps its own local state:
+
+```bash
+cd backend-bootstrap
+terraform init
+terraform apply
+```
+
+### Migrating existing local state
+
+If the environment was previously applied with local state, move that state
+into S3 **before** merging any change that triggers the CD workflow:
+
+```bash
+cd environments/dev          # the directory holding the existing terraform.tfstate
+terraform init -migrate-state
+terraform state list          # should list the existing resources
+```
+
+The CD workflow refuses to apply when the remote state is empty, so it cannot
+try to recreate resources that already exist.
+
+### Lambda image
+
+The backend repository's deploy workflow pushes `:<commit-sha>` images and
+updates the Lambda function code directly. Terraform ignores changes to the
+function's `image_uri`, so `ecr_image_tag` only matters when the function is
+first created.
 
 ## 🔧 Configuration Options
 
